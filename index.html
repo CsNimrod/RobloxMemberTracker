@@ -1,103 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Group Member Tracker</title>
-<link rel="stylesheet" href="style.css" />
+  <title>Roblox Member Tracker</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <div class="page">
+<h1>Roblox Group Member Tracker</h1>
 
-    <header class="topbar">
-      <div class="topbar-id">
-        <span class="dot" aria-hidden="true"></span>
-        <h1 id="group-name">Loading group…</h1>
-      </div>
-      <p class="topbar-sub">Member count, tracked daily</p>
-    </header>
+<div id="legend"></div>
 
-    <!-- Shown only if data/members.json has no entries yet -->
-    <section id="empty-state" class="empty-state" hidden>
-      <h2>No data recorded yet</h2>
-      <p>
-        Once the <code>track-members.yml</code> workflow runs for the first
-        time, this page will fill in automatically. Go to the
-        <strong>Actions</strong> tab on GitHub and click
-        <strong>Run workflow</strong> on “Track Roblox Group Members” to get
-        your first data point right away.
-      </p>
-    </section>
+<canvas id="chart"></canvas>
 
-    <main id="dashboard" class="dashboard">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="app.js"></script>
 
-      <!-- Stat strip -->
-      <section class="stats" aria-label="Summary stats">
-        <div class="stat-card stat-card--primary">
-          <span class="stat-label">Current members</span>
-          <span class="stat-value" id="current-count">—</span>
-          <span class="stat-foot" id="current-date">—</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Since yesterday</span>
-          <span class="stat-value" id="delta-today">—</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Last 7 days</span>
-          <span class="stat-value" id="delta-week">—</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">All-time high</span>
-          <span class="stat-value" id="ath-count">—</span>
-        </div>
-      </section>
-
-      <!-- Chart + drag-to-select -->
-      <section class="chart-card">
-        <div class="chart-card-head">
-          <h2>Member history</h2>
-          <p class="hint">Click and drag across the chart to compare two points</p>
-        </div>
-
-        <div id="chart-wrapper" class="chart-wrapper">
-          <canvas id="chart"></canvas>
-          <div id="selection-band" class="selection-band" hidden></div>
-        </div>
-
-        <div id="result-card" class="result-card" hidden>
-          <span id="result-text" class="result-text"></span>
-          <button id="clear-result" class="icon-btn" aria-label="Clear selection" title="Clear selection">✕</button>
-        </div>
-      </section>
-
-      <!-- Manual date range -->
-      <section class="range-card">
-        <h2>Look at a specific period</h2>
-        <div class="range-controls">
-          <label class="field">
-            <span>From</span>
-            <input type="date" id="from-date" />
-          </label>
-          <label class="field">
-            <span>To</span>
-            <input type="date" id="to-date" />
-          </label>
-          <button id="apply-range" class="btn btn-primary">Apply</button>
-          <button id="reset-range" class="btn">Reset</button>
-        </div>
-        <p id="range-message" class="range-message" hidden></p>
-      </section>
-
-    </main>
-
-    <footer class="page-footer">
-      <p>Data collected automatically once a day via GitHub Actions · memberCount from the public Roblox Groups API</p>
-    </footer>
-
-  </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
-  <script src="app.js"></script>
 </body>
 </html>
