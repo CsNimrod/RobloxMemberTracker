@@ -18,24 +18,26 @@ function getColor(i) {
 
 async function loadData() {
   try {
+    status("Loading data...");
+
     const res = await fetch("data/members.json");
 
     if (!res.ok) {
-      status("❌ JSON not found (check /data/members.json)");
+      status("❌ Failed to load JSON");
       return [];
     }
 
     const data = await res.json();
 
     if (!Array.isArray(data)) {
-      status("❌ JSON must be an array");
+      status("❌ JSON is not an array");
       return [];
     }
 
     return data;
   } catch (err) {
     console.error(err);
-    status("❌ Failed to load JSON");
+    status("❌ Fetch error");
     return [];
   }
 }
@@ -43,113 +45,116 @@ async function loadData() {
 function render(data) {
   const canvas = document.getElementById("chart");
 
-  if (!window.Chart) {
-    status("❌ Chart.js not loaded");
-    return;
-  }
-
   if (!canvas) {
-    status("❌ Canvas missing");
+    status("❌ Canvas not found");
     return;
   }
 
   if (chart) chart.destroy();
 
   if (!data || data.length === 0) {
-    status("⚠️ No data");
+    status("⚠️ No data to display");
     return;
   }
 
-  // FIX: robust group detection
+  // 📅 dates
   const labels = data.map(d => d.date);
 
+  // 📦 build groups safely
   const groupMap = {};
 
   for (const entry of data) {
     const groups = entry?.groups;
 
-    if (!groups || typeof groups !== "object") continue;
+    if (!groups) continue;
 
     for (const [id, g] of Object.entries(groups)) {
       if (!groupMap[id]) {
         groupMap[id] = {
-          name: g?.name || id,
+          name: g?.name || `Group ${id}`,
           data: []
         };
       }
     }
   }
 
-  // FIX: fill values safely
+  // 📊 fill values
   for (const id in groupMap) {
     groupMap[id].data = data.map(d =>
       d?.groups?.[id]?.memberCount ?? null
     );
   }
 
-  const datasets = Object.values(groupMap).map((g, i) => ({
-    label: g.name,
-    data: g.data,
-    borderColor: getColor(i),
-    backgroundColor: getColor(i) + "22",
-    borderWidth: 3,
-    pointRadius: 2,
-    pointHoverRadius: 6,
-    tension: 0.35,
-    fill: true
-  }));
+  const groupIds = Object.keys(groupMap);
 
-  try {
-    chart = new Chart(canvas, {
-      type: "line",
-      data: {
-        labels,
-        datasets
+  if (groupIds.length === 0) {
+    status("❌ No groups found in data");
+    return;
+  }
+
+  // 🔥 DEBUG (safe to keep)
+  console.log("Labels:", labels);
+  console.log("Groups:", groupMap);
+
+  // 📈 CREATE CHART
+  chart = new Chart(canvas, {
+    type: "line",
+    data: {
+      labels,
+      datasets: groupIds.map((id, i) => ({
+        label: groupMap[id].name,
+        data: groupMap[id].data,
+
+        borderColor: getColor(i),
+        backgroundColor: getColor(i) + "22",
+        borderWidth: 3,
+        pointRadius: 3,
+        pointHoverRadius: 6,
+        tension: 0.35,
+        fill: true
+      }))
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+
+      interaction: {
+        mode: "index",
+        intersect: false
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: {
-          mode: "index",
-          intersect: false
-        },
-        plugins: {
-          legend: {
-            labels: { color: "#fff" }
-          },
-          tooltip: {
-            backgroundColor: "#111",
-            borderColor: "#333",
-            borderWidth: 1
+
+      plugins: {
+        legend: {
+          labels: {
+            color: "#fff"
           }
         },
-        scales: {
-          x: {
-            ticks: { color: "#aaa" },
-            grid: { color: "#222" }
-          },
-          y: {
-            ticks: { color: "#aaa" },
-            grid: { color: "#222" }
-          }
+        tooltip: {
+          backgroundColor: "#111",
+          borderColor: "#333",
+          borderWidth: 1
+        }
+      },
+
+      scales: {
+        x: {
+          ticks: { color: "#aaa" },
+          grid: { color: "#222" }
+        },
+        y: {
+          ticks: { color: "#aaa" },
+          grid: { color: "#222" }
         }
       }
-    });
+    }
+  });
 
-    status("✅ Chart loaded");
-  } catch (err) {
-    console.error(err);
-    status("❌ Chart failed to render");
-  }
+  status("✅ Chart loaded successfully");
 }
 
 async function init() {
-  status("Loading...");
-
   rawData = await loadData();
-
   console.log("RAW DATA:", rawData);
-
   render(rawData);
 }
 

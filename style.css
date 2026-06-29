@@ -55,12 +55,12 @@ h1 {
 canvas {
   width: 95vw !important;
   height: 70vh !important;
+  min-height: 400px;
   max-width: 1200px;
-  margin: auto;
   display: block;
+  margin: 20px auto;
   background: #0f1424;
-  border-radius: 14px;
-  padding: 10px;
+  border-radius: 12px;
 }
 
 #status {
