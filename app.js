@@ -10,72 +10,69 @@ function status(msg) {
 
 function getColor(i) {
   const colors = [
-    "#ff4d4d",
-    "#4d79ff",
-    "#4dff88",
-    "#ffb84d",
-    "#b84dff",
-    "#4dfff6",
-    "#ff4df0",
-    "#ffd24d"
+    "#ff4d4d", "#4d79ff", "#4dff88", "#ffb84d",
+    "#b84dff", "#4dfff6", "#ff4df0", "#ffd24d"
   ];
   return colors[i % colors.length];
 }
 
 async function loadData() {
   try {
-    status("Loading data...");
-
     const res = await fetch("data/members.json");
 
     if (!res.ok) {
-      status("❌ Cannot load data/members.json (404)");
+      status("❌ JSON not found (check /data/members.json)");
       return [];
     }
 
     const data = await res.json();
 
     if (!Array.isArray(data)) {
-      status("❌ Invalid JSON format");
+      status("❌ JSON must be an array");
       return [];
     }
 
     return data;
   } catch (err) {
     console.error(err);
-    status("❌ Failed to fetch JSON");
+    status("❌ Failed to load JSON");
     return [];
   }
-}
-
-function filterData(data, start, end) {
-  return data.filter(d => {
-    return (!start || d.date >= start) &&
-           (!end || d.date <= end);
-  });
 }
 
 function render(data) {
   const canvas = document.getElementById("chart");
 
-  if (chart) chart.destroy();
-
-  if (!data || !data.length) {
-    status("⚠️ No data to display");
+  if (!window.Chart) {
+    status("❌ Chart.js not loaded");
     return;
   }
 
+  if (!canvas) {
+    status("❌ Canvas missing");
+    return;
+  }
+
+  if (chart) chart.destroy();
+
+  if (!data || data.length === 0) {
+    status("⚠️ No data");
+    return;
+  }
+
+  // FIX: robust group detection
   const labels = data.map(d => d.date);
 
-  const groups = {};
+  const groupMap = {};
 
-  // build groups safely
   for (const entry of data) {
-    if (!entry?.groups) continue;
+    const groups = entry?.groups;
 
-    for (const [id, g] of Object.entries(entry.groups)) {
-      if (!groups[id]) {
-        groups[id] = {
+    if (!groups || typeof groups !== "object") continue;
+
+    for (const [id, g] of Object.entries(groups)) {
+      if (!groupMap[id]) {
+        groupMap[id] = {
           name: g?.name || id,
           data: []
         };
@@ -83,84 +80,77 @@ function render(data) {
     }
   }
 
-  // map values
-  for (const id in groups) {
-    groups[id].data = data.map(d =>
+  // FIX: fill values safely
+  for (const id in groupMap) {
+    groupMap[id].data = data.map(d =>
       d?.groups?.[id]?.memberCount ?? null
     );
   }
 
-  // ✨ CLEAN MODERN CHART
-  chart = new Chart(canvas, {
-    type: "line",
-    data: {
-      labels,
-      datasets: Object.values(groups).map((g, i) => ({
-        label: g.name,
-        data: g.data,
+  const datasets = Object.values(groupMap).map((g, i) => ({
+    label: g.name,
+    data: g.data,
+    borderColor: getColor(i),
+    backgroundColor: getColor(i) + "22",
+    borderWidth: 3,
+    pointRadius: 2,
+    pointHoverRadius: 6,
+    tension: 0.35,
+    fill: true
+  }));
 
-        // 🔥 visual upgrade
-        borderColor: getColor(i),
-        backgroundColor: getColor(i) + "22",
-        borderWidth: 3,
-        pointRadius: 2,
-        pointHoverRadius: 6,
-        tension: 0.4,
-        fill: true
-      }))
-    },
-
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-
-      interaction: {
-        mode: "index",
-        intersect: false
+  try {
+    chart = new Chart(canvas, {
+      type: "line",
+      data: {
+        labels,
+        datasets
       },
-
-      plugins: {
-        legend: {
-          labels: {
-            color: "#fff",
-            boxWidth: 12,
-            padding: 15
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: "index",
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            labels: { color: "#fff" }
+          },
+          tooltip: {
+            backgroundColor: "#111",
+            borderColor: "#333",
+            borderWidth: 1
           }
         },
-        tooltip: {
-          enabled: true,
-          backgroundColor: "#111",
-          titleColor: "#fff",
-          bodyColor: "#ddd",
-          borderColor: "#333",
-          borderWidth: 1
-        }
-      },
-
-      scales: {
-        x: {
-          ticks: {
-            color: "#aaa",
-            maxRotation: 45,
-            minRotation: 45
+        scales: {
+          x: {
+            ticks: { color: "#aaa" },
+            grid: { color: "#222" }
           },
-          grid: {
-            color: "#1f1f1f"
-          }
-        },
-        y: {
-          ticks: {
-            color: "#aaa"
-          },
-          grid: {
-            color: "#1f1f1f"
+          y: {
+            ticks: { color: "#aaa" },
+            grid: { color: "#222" }
           }
         }
       }
-    }
-  });
+    });
 
-  status("✅ Chart loaded");
+    status("✅ Chart loaded");
+  } catch (err) {
+    console.error(err);
+    status("❌ Chart failed to render");
+  }
+}
+
+async function init() {
+  status("Loading...");
+
+  rawData = await loadData();
+
+  console.log("RAW DATA:", rawData);
+
+  render(rawData);
 }
 
 window.addEventListener("DOMContentLoaded", init);
