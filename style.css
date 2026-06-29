@@ -53,12 +53,14 @@ h1 {
 }
 
 canvas {
-  max-width: 95%;
-  height: 500px !important;
-  background: #11182a;
+  width: 95vw !important;
+  height: 70vh !important;
+  max-width: 1200px;
+  margin: auto;
+  display: block;
+  background: #0f1424;
+  border-radius: 14px;
   padding: 10px;
-  border-radius: 12px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.4);
 }
 
 #status {

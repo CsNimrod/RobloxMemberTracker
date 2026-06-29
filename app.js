@@ -58,11 +58,6 @@ function filterData(data, start, end) {
 function render(data) {
   const canvas = document.getElementById("chart");
 
-  if (!canvas) {
-    status("❌ Canvas not found");
-    return;
-  }
-
   if (chart) chart.destroy();
 
   if (!data || !data.length) {
@@ -74,11 +69,11 @@ function render(data) {
 
   const groups = {};
 
-  // SAFE GROUP PARSING
+  // build groups safely
   for (const entry of data) {
     if (!entry?.groups) continue;
 
-    for (const [id, g] of Object.entries(entry.groups || {})) {
+    for (const [id, g] of Object.entries(entry.groups)) {
       if (!groups[id]) {
         groups[id] = {
           name: g?.name || id,
@@ -88,14 +83,14 @@ function render(data) {
     }
   }
 
-  // BUILD SERIES
+  // map values
   for (const id in groups) {
     groups[id].data = data.map(d =>
       d?.groups?.[id]?.memberCount ?? null
     );
   }
 
-  // CREATE CHART
+  // ✨ CLEAN MODERN CHART
   chart = new Chart(canvas, {
     type: "line",
     data: {
@@ -103,56 +98,69 @@ function render(data) {
       datasets: Object.values(groups).map((g, i) => ({
         label: g.name,
         data: g.data,
+
+        // 🔥 visual upgrade
         borderColor: getColor(i),
-        backgroundColor: getColor(i) + "33",
+        backgroundColor: getColor(i) + "22",
         borderWidth: 3,
-        pointRadius: 3,
+        pointRadius: 2,
         pointHoverRadius: 6,
-        fill: true,
-        tension: 0.35
+        tension: 0.4,
+        fill: true
       }))
     },
+
     options: {
       responsive: true,
       maintainAspectRatio: false,
+
+      interaction: {
+        mode: "index",
+        intersect: false
+      },
+
       plugins: {
         legend: {
-          display: true,
           labels: {
-            color: "#fff"
+            color: "#fff",
+            boxWidth: 12,
+            padding: 15
           }
+        },
+        tooltip: {
+          enabled: true,
+          backgroundColor: "#111",
+          titleColor: "#fff",
+          bodyColor: "#ddd",
+          borderColor: "#333",
+          borderWidth: 1
         }
       },
+
       scales: {
         x: {
-          ticks: { color: "#aaa" },
-          grid: { color: "#222" }
+          ticks: {
+            color: "#aaa",
+            maxRotation: 45,
+            minRotation: 45
+          },
+          grid: {
+            color: "#1f1f1f"
+          }
         },
         y: {
-          ticks: { color: "#aaa" },
-          grid: { color: "#222" }
+          ticks: {
+            color: "#aaa"
+          },
+          grid: {
+            color: "#1f1f1f"
+          }
         }
       }
     }
   });
 
-  status("✅ Loaded successfully");
-}
-
-function applyFilter() {
-  const start = document.getElementById("startDate").value;
-  const end = document.getElementById("endDate").value;
-
-  const filtered = filterData(rawData, start, end);
-  render(filtered);
-}
-
-async function init() {
-  rawData = await loadData();
-
-  console.log("RAW DATA:", rawData);
-
-  render(rawData);
+  status("✅ Chart loaded");
 }
 
 window.addEventListener("DOMContentLoaded", init);
