@@ -5,40 +5,50 @@ const statusBox = document.getElementById("status");
 
 function showStatus(msg) {
   statusBox.innerText = msg;
+  console.log(msg);
 }
 
-function getColor(index) {
-  const colors = [
-    "red", "blue", "green", "orange", "purple",
-    "cyan", "magenta", "gold", "teal", "pink"
-  ];
-  return colors[index % colors.length];
+function getColor(i) {
+  const colors = ["red","blue","green","orange","purple","cyan","gold","pink"];
+  return colors[i % colors.length];
 }
 
 async function loadData() {
   try {
     const res = await fetch("data/members.json");
-    if (!res.ok) throw new Error("Failed to load JSON");
-    return await res.json();
+
+    if (!res.ok) {
+      showStatus("⚠️ No data file found (run GitHub Actions first)");
+      return [];
+    }
+
+    const data = await res.json();
+
+    if (!Array.isArray(data)) {
+      showStatus("⚠️ Invalid JSON format");
+      return [];
+    }
+
+    return data;
   } catch (err) {
     console.error(err);
-    showStatus("❌ Failed to load data (check GitHub Pages setup)");
+    showStatus("❌ Failed to load data file");
     return [];
   }
 }
 
 function filterData(data, start, end) {
-  return data.filter(entry => {
-    const d = entry.date;
-    return (!start || d >= start) && (!end || d <= end);
+  return data.filter(d => {
+    return (!start || d.date >= start) &&
+           (!end || d.date <= end);
   });
 }
 
-function renderChart(data) {
+function render(data) {
   if (chart) chart.destroy();
 
-  if (!data.length) {
-    showStatus("⚠️ No data in selected range");
+  if (!data || !data.length) {
+    showStatus("⚠️ No data available");
     return;
   }
 
@@ -46,11 +56,14 @@ function renderChart(data) {
 
   const groupMap = {};
 
+  // SAFE LOOP (prevents crash)
   for (const entry of data) {
-    for (const [id, g] of Object.entries(entry.groups)) {
+    if (!entry || !entry.groups) continue;
+
+    for (const [id, g] of Object.entries(entry.groups || {})) {
       if (!groupMap[id]) {
         groupMap[id] = {
-          name: g.name,
+          name: g?.name || id,
           data: []
         };
       }
@@ -58,7 +71,9 @@ function renderChart(data) {
   }
 
   for (const id in groupMap) {
-    groupMap[id].data = data.map(d => d.groups?.[id]?.memberCount ?? null);
+    groupMap[id].data = data.map(d =>
+      d?.groups?.[id]?.memberCount ?? null
+    );
   }
 
   const ctx = document.getElementById("chart");
@@ -67,7 +82,7 @@ function renderChart(data) {
     type: "line",
     data: {
       labels,
-      datasets: Object.entries(groupMap).map(([id, g], i) => ({
+      datasets: Object.values(groupMap).map((g, i) => ({
         label: g.name,
         data: g.data,
         borderColor: getColor(i),
@@ -85,18 +100,17 @@ function applyFilter() {
   const end = document.getElementById("endDate").value;
 
   const filtered = filterData(rawData, start, end);
-  renderChart(filtered);
+  render(filtered);
 }
 
 async function init() {
+  showStatus("Loading data...");
+
   rawData = await loadData();
 
-  if (!rawData.length) {
-    showStatus("⚠️ No data yet (run GitHub Actions first)");
-    return;
-  }
+  console.log("RAW DATA:", rawData);
 
-  renderChart(rawData);
+  render(rawData);
 }
 
 init();

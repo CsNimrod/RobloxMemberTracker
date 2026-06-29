@@ -1,8 +1,8 @@
 body {
-  font-family: Arial, sans-serif;
-  text-align: center;
+  font-family: Arial;
   background: #0f0f0f;
   color: white;
+  text-align: center;
 }
 
 canvas {
@@ -10,35 +10,35 @@ canvas {
   margin: auto;
 }
 
-#legend {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-#legend div {
-  padding: 6px 10px;
-  border: 1px solid #444;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
 #controls {
   margin: 15px;
 }
 
 #controls input {
-  margin: 5px;
   padding: 5px;
+  margin: 5px;
   background: #1a1a1a;
   color: white;
   border: 1px solid #444;
 }
 
 #controls button {
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+#legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+#legend div {
   padding: 5px 10px;
+  border: 1px solid #444;
+  border-radius: 6px;
   cursor: pointer;
 }
 
