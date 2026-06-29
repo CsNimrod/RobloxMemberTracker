@@ -22,20 +22,27 @@ canvas {
   padding: 6px 10px;
   border: 1px solid #444;
   border-radius: 6px;
-  user-select: none;
+  cursor: pointer;
 }
 
-h3 {
-  margin-top: 20px;
-  color: #fff;
+#controls {
+  margin: 15px;
 }
 
-ul {
-  list-style: none;
-  padding: 0;
+#controls input {
+  margin: 5px;
+  padding: 5px;
+  background: #1a1a1a;
+  color: white;
+  border: 1px solid #444;
 }
 
-li {
-  margin: 4px 0;
-  color: #ccc;
+#controls button {
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+#status {
+  margin-top: 15px;
+  color: #aaa;
 }

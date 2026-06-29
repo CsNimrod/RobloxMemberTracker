@@ -1,6 +1,23 @@
 [
   {
+    "date": "2026-06-27",
+    "groups": {
+      "123": { "name": "Group A", "memberCount": 100 },
+      "456": { "name": "Group B", "memberCount": 200 }
+    }
+  },
+  {
+    "date": "2026-06-28",
+    "groups": {
+      "123": { "name": "Group A", "memberCount": 120 },
+      "456": { "name": "Group B", "memberCount": 240 }
+    }
+  },
+  {
     "date": "2026-06-29",
-    "memberCount": 166
+    "groups": {
+      "123": { "name": "Group A", "memberCount": 140 },
+      "456": { "name": "Group B", "memberCount": 260 }
+    }
   }
 ]
