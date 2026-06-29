@@ -1,5 +1,5 @@
 let rawData = [];
-let chart;
+let chart = null;
 
 const statusBox = document.getElementById("status");
 
@@ -18,21 +18,21 @@ async function loadData() {
     const res = await fetch("data/members.json");
 
     if (!res.ok) {
-      status("❌ JSON not found (404)");
+      status("❌ Cannot load JSON (404)");
       return [];
     }
 
     const data = await res.json();
 
     if (!Array.isArray(data)) {
-      status("❌ JSON is not array");
+      status("❌ JSON format invalid");
       return [];
     }
 
     return data;
   } catch (e) {
     console.error(e);
-    status("❌ Failed to load JSON");
+    status("❌ Fetch error");
     return [];
   }
 }
@@ -45,12 +45,12 @@ function filter(data, start, end) {
 }
 
 function render(data) {
-  const canvas = document.getElementById("chart");
-
-  if (!canvas) {
-    status("❌ Canvas not found");
+  if (!window.Chart) {
+    status("❌ Chart.js not loaded");
     return;
   }
+
+  const canvas = document.getElementById("chart");
 
   if (chart) chart.destroy();
 
@@ -82,26 +82,21 @@ function render(data) {
     );
   }
 
-  try {
-    chart = new Chart(canvas, {
-      type: "line",
-      data: {
-        labels,
-        datasets: Object.values(groups).map((g, i) => ({
-          label: g.name,
-          data: g.data,
-          borderColor: getColor(i),
-          fill: false,
-          tension: 0.2
-        }))
-      }
-    });
+  chart = new Chart(canvas, {
+    type: "line",
+    data: {
+      labels,
+      datasets: Object.values(groups).map((g, i) => ({
+        label: g.name,
+        data: g.data,
+        borderColor: getColor(i),
+        fill: false,
+        tension: 0.2
+      }))
+    }
+  });
 
-    status("✅ Chart loaded successfully");
-  } catch (err) {
-    console.error(err);
-    status("❌ Chart failed to render (Chart.js issue)");
-  }
+  status("✅ Loaded successfully");
 }
 
 function applyFilter() {
@@ -113,11 +108,6 @@ function applyFilter() {
 
 async function init() {
   status("Loading...");
-
-  if (typeof Chart === "undefined") {
-    status("❌ Chart.js not loaded");
-    return;
-  }
 
   rawData = await loadData();
 
