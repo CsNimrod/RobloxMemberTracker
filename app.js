@@ -10,32 +10,40 @@ function status(msg) {
 
 function getColor(i) {
   const colors = [
-    "red","blue","green","orange","purple",
-    "cyan","gold","pink","lime","magenta"
+    "#ff4d4d",
+    "#4d79ff",
+    "#4dff88",
+    "#ffb84d",
+    "#b84dff",
+    "#4dfff6",
+    "#ff4df0",
+    "#ffd24d"
   ];
   return colors[i % colors.length];
 }
 
 async function loadData() {
   try {
+    status("Loading data...");
+
     const res = await fetch("data/members.json");
 
     if (!res.ok) {
-      status("❌ 404: data/members.json not found");
+      status("❌ Cannot load data/members.json (404)");
       return [];
     }
 
     const data = await res.json();
 
     if (!Array.isArray(data)) {
-      status("❌ JSON is not an array");
+      status("❌ Invalid JSON format");
       return [];
     }
 
     return data;
   } catch (err) {
     console.error(err);
-    status("❌ Failed to load JSON");
+    status("❌ Failed to fetch JSON");
     return [];
   }
 }
@@ -50,6 +58,11 @@ function filterData(data, start, end) {
 function render(data) {
   const canvas = document.getElementById("chart");
 
+  if (!canvas) {
+    status("❌ Canvas not found");
+    return;
+  }
+
   if (chart) chart.destroy();
 
   if (!data || !data.length) {
@@ -61,9 +74,9 @@ function render(data) {
 
   const groups = {};
 
-  // ✅ SAFE LOOP (fixes your crash)
+  // SAFE GROUP PARSING
   for (const entry of data) {
-    if (!entry || !entry.groups) continue;
+    if (!entry?.groups) continue;
 
     for (const [id, g] of Object.entries(entry.groups || {})) {
       if (!groups[id]) {
@@ -75,33 +88,55 @@ function render(data) {
     }
   }
 
-  // build dataset safely
+  // BUILD SERIES
   for (const id in groups) {
     groups[id].data = data.map(d =>
       d?.groups?.[id]?.memberCount ?? null
     );
   }
 
-  try {
-    chart = new Chart(canvas, {
-      type: "line",
-      data: {
-        labels,
-        datasets: Object.values(groups).map((g, i) => ({
-          label: g.name,
-          data: g.data,
-          borderColor: getColor(i),
-          fill: false,
-          tension: 0.25
-        }))
+  // CREATE CHART
+  chart = new Chart(canvas, {
+    type: "line",
+    data: {
+      labels,
+      datasets: Object.values(groups).map((g, i) => ({
+        label: g.name,
+        data: g.data,
+        borderColor: getColor(i),
+        backgroundColor: getColor(i) + "33",
+        borderWidth: 3,
+        pointRadius: 3,
+        pointHoverRadius: 6,
+        fill: true,
+        tension: 0.35
+      }))
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          labels: {
+            color: "#fff"
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: "#aaa" },
+          grid: { color: "#222" }
+        },
+        y: {
+          ticks: { color: "#aaa" },
+          grid: { color: "#222" }
+        }
       }
-    });
+    }
+  });
 
-    status("✅ Loaded successfully");
-  } catch (err) {
-    console.error(err);
-    status("❌ Chart.js failed to render");
-  }
+  status("✅ Loaded successfully");
 }
 
 function applyFilter() {
@@ -113,8 +148,6 @@ function applyFilter() {
 }
 
 async function init() {
-  status("Loading...");
-
   rawData = await loadData();
 
   console.log("RAW DATA:", rawData);
