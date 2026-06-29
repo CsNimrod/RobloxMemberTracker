@@ -1,0 +1,38 @@
+name: Track Roblox Group Members
+
+on:
+  schedule:
+    # Runs once a day at 06:00 UTC. GitHub may delay scheduled runs slightly
+    # during busy periods — that's normal. Edit the cron value to change the time.
+    - cron: "0 6 * * *"
+  # Lets you trigger a run by hand from the "Actions" tab (useful for testing
+  # and for getting your very first data point right after setup).
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Fetch current member count
+        env:
+          GROUP_ID: ${{ vars.ROBLOX_GROUP_ID }}
+        run: node scripts/fetch-members.js
+
+      - name: Commit updated data file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/members.json
+          git diff --staged --quiet || git commit -m "chore: record member count for $(date -u +'%Y-%m-%d')"
+          git push
