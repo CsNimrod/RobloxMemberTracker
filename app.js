@@ -154,8 +154,11 @@ function render(data) {
 
 async function init() {
   rawData = await loadData();
-  console.log("RAW DATA:", rawData);
   render(rawData);
 }
 
 window.addEventListener("DOMContentLoaded", init);
+
+if (typeof init !== "function") {
+  console.error("init() missing — app.js not loaded correctly");
+}
