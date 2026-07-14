@@ -373,5 +373,30 @@
         "memberCount": 33
       }
     }
+  },
+  {
+    "date": "2026-07-14",
+    "groups": {
+      "4929233": {
+        "name": "Μilitary Police Corps",
+        "memberCount": 397
+      },
+      "7076400": {
+        "name": "14th Battalion",
+        "memberCount": 143
+      },
+      "8124498": {
+        "name": "5O3rd Battalion",
+        "memberCount": 162
+      },
+      "15531002": {
+        "name": "Judge Advocate Generals Corpᅠᅠᅠᅠᅠᅠ",
+        "memberCount": 58
+      },
+      "33438975": {
+        "name": "СriminaI Investigation Division",
+        "memberCount": 33
+      }
+    }
   }
 ]
