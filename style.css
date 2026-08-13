@@ -40,16 +40,25 @@ h1 {
   margin-bottom: 10px;
 }
 
-#legend div {
+#legend div,
+.legend-item {
   padding: 6px 10px;
   border-radius: 8px;
   background: #1b2236;
   cursor: pointer;
   transition: 0.2s;
+  user-select: none;
+  font-size: 0.9em;
 }
 
-#legend div:hover {
+#legend div:hover,
+.legend-item:hover {
   transform: scale(1.05);
+}
+
+.legend-item.inactive {
+  opacity: 0.35;
+  text-decoration: line-through;
 }
 
 canvas {

@@ -1,6 +1,13 @@
 let rawData = [];
 let chart = null;
 
+// Which group IDs are currently visible on the chart
+let activeGroups = new Set();
+// name lookup, built once from the full dataset
+let groupNames = {};
+// order groups first appeared in, so colors/legend stay stable
+let groupOrder = [];
+
 const statusBox = document.getElementById("status");
 
 function status(msg) {
@@ -40,7 +47,77 @@ async function loadData() {
   }
 }
 
-function render(data) {
+// Figure out every group id/name that appears anywhere in the dataset,
+// in a stable order, so colors and the legend don't jump around.
+function indexGroups(data) {
+  groupNames = {};
+  groupOrder = [];
+
+  for (const entry of data) {
+    const groups = entry?.groups;
+    if (!groups || typeof groups !== "object") continue;
+
+    for (const [id, g] of Object.entries(groups)) {
+      if (!(id in groupNames)) {
+        groupNames[id] = g?.name || id;
+        groupOrder.push(id);
+      }
+    }
+  }
+}
+
+// Build the clickable legend. Clicking a chip toggles that group on/off.
+function buildLegend() {
+  const legendEl = document.getElementById("legend");
+  if (!legendEl) return;
+
+  legendEl.innerHTML = "";
+
+  groupOrder.forEach((id, i) => {
+    const chip = document.createElement("div");
+    chip.className = "legend-item" + (activeGroups.has(id) ? "" : " inactive");
+    chip.style.borderLeft = `4px solid ${getColor(i)}`;
+    chip.textContent = groupNames[id];
+    chip.title = "Click to toggle this line";
+
+    chip.addEventListener("click", () => {
+      if (activeGroups.has(id)) {
+        activeGroups.delete(id);
+      } else {
+        activeGroups.add(id);
+      }
+      chip.classList.toggle("inactive", !activeGroups.has(id));
+      renderChart(getFilteredData());
+    });
+
+    legendEl.appendChild(chip);
+  });
+}
+
+// Filter rawData by the start/end date inputs. Empty inputs = no bound.
+function getFilteredData() {
+  const startVal = document.getElementById("startDate")?.value;
+  const endVal = document.getElementById("endDate")?.value;
+
+  return rawData.filter(entry => {
+    if (startVal && entry.date < startVal) return false;
+    if (endVal && entry.date > endVal) return false;
+    return true;
+  });
+}
+
+// Called by the "Apply" button
+function applyFilter() {
+  const filtered = getFilteredData();
+
+  if (filtered.length === 0) {
+    status("⚠️ No data in that date range");
+  }
+
+  renderChart(filtered);
+}
+
+function renderChart(data) {
   const canvas = document.getElementById("chart");
 
   if (!window.Chart) {
@@ -60,44 +137,32 @@ function render(data) {
     return;
   }
 
-  // FIX: robust group detection
   const labels = data.map(d => d.date);
 
-  const groupMap = {};
+  // Only build datasets for groups the user has toggled on
+  const visibleIds = groupOrder.filter(id => activeGroups.has(id));
 
-  for (const entry of data) {
-    const groups = entry?.groups;
+  const datasets = visibleIds.map(id => {
+    const colorIndex = groupOrder.indexOf(id);
+    const values = data.map(d => d?.groups?.[id]?.memberCount ?? null);
 
-    if (!groups || typeof groups !== "object") continue;
+    return {
+      label: groupNames[id] || id,
+      data: values,
+      borderColor: getColor(colorIndex),
+      backgroundColor: getColor(colorIndex) + "22",
+      borderWidth: 3,
+      pointRadius: 2,
+      pointHoverRadius: 6,
+      tension: 0.35,
+      fill: true
+    };
+  });
 
-    for (const [id, g] of Object.entries(groups)) {
-      if (!groupMap[id]) {
-        groupMap[id] = {
-          name: g?.name || id,
-          data: []
-        };
-      }
-    }
+  if (datasets.length === 0) {
+    status("⚠️ No groups selected — click a legend chip to show a line");
+    return;
   }
-
-  // FIX: fill values safely
-  for (const id in groupMap) {
-    groupMap[id].data = data.map(d =>
-      d?.groups?.[id]?.memberCount ?? null
-    );
-  }
-
-  const datasets = Object.values(groupMap).map((g, i) => ({
-    label: g.name,
-    data: g.data,
-    borderColor: getColor(i),
-    backgroundColor: getColor(i) + "22",
-    borderWidth: 3,
-    pointRadius: 2,
-    pointHoverRadius: 6,
-    tension: 0.35,
-    fill: true
-  }));
 
   try {
     chart = new Chart(canvas, {
@@ -114,8 +179,9 @@ function render(data) {
           intersect: false
         },
         plugins: {
+          // Using our own #legend chips instead of Chart.js's built-in legend
           legend: {
-            labels: { color: "#fff" }
+            display: false
           },
           tooltip: {
             backgroundColor: "#111",
@@ -136,11 +202,23 @@ function render(data) {
       }
     });
 
-    status("✅ Chart loaded");
+    status(`✅ Chart loaded (${datasets.length} of ${groupOrder.length} groups shown)`);
   } catch (err) {
     console.error(err);
     status("❌ Chart failed to render");
   }
+}
+
+// Pre-fill the date inputs with the dataset's actual range
+function setDefaultDateRange() {
+  if (!rawData.length) return;
+
+  const dates = rawData.map(d => d.date).sort();
+  const startInput = document.getElementById("startDate");
+  const endInput = document.getElementById("endDate");
+
+  if (startInput && !startInput.value) startInput.value = dates[0];
+  if (endInput && !endInput.value) endInput.value = dates[dates.length - 1];
 }
 
 async function init() {
@@ -150,7 +228,17 @@ async function init() {
 
   console.log("RAW DATA:", rawData);
 
-  render(rawData);
+  indexGroups(rawData);
+
+  // start with every group visible
+  activeGroups = new Set(groupOrder);
+
+  setDefaultDateRange();
+  buildLegend();
+  renderChart(getFilteredData());
 }
 
 window.addEventListener("DOMContentLoaded", init);
+
+// Exposed for the inline onclick="applyFilter()" in index.html
+window.applyFilter = applyFilter;
